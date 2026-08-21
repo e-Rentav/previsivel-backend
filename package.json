@@ -1,0 +1,26 @@
+{
+  "name": "previsivel-backend",
+  "version": "1.0.0",
+  "description": "Backend AWS para captura de leads do Previsível",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test tests/**/*.test.js",
+    "lint": "eslint src tests"
+  },
+  "keywords": ["lambda", "aws", "previsivel"],
+  "author": "e-Rentav",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.515.0",
+    "@aws-sdk/client-ssm": "^3.515.0",
+    "@aws-sdk/lib-dynamodb": "^3.515.0",
+    "ulid": "^2.3.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

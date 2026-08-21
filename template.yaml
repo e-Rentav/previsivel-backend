@@ -1,0 +1,140 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Backend Previsível - captura de leads e eventos de funil
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: nodejs22.x
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        NODE_OPTIONS: '--enable-source-maps'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+    Description: Ambiente de deploy
+
+  LandingPageOrigin:
+    Type: String
+    Description: Origem da landing page para CORS (ex https://seu-dominio.lovable.app)
+    Default: '*'
+
+Resources:
+  # DynamoDB Table
+  PrevisivelEventosTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub previsivel-eventos-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: Previsivel
+
+  # Lambda Function
+  PrevisivelFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub previsivel-webhook-${Environment}
+      CodeUri: src/
+      Handler: index.handler
+      Description: Processa eventos de lead e funil do Previsível
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          DDB_TABLE: !Ref PrevisivelEventosTable
+          NOTION_DATA_SOURCE_ID: 289b22b9-377f-4acf-838a-0590ca81c953
+          NOTION_DATABASE_ID: 18931f39854848959ecf471512eadd9f
+          BREVO_TEMPLATE_ID: '136'
+          ASANA_WORKSPACE: '1202389718422606'
+          ASANA_PROJECT: '1215842346830623'
+          ASANA_SECTION: '1215842363706019'
+          ASANA_ASSIGNEE: '1202389717777239'
+          SSM_PREFIX: !Sub /previsivel/${Environment}
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PrevisivelEventosTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:GetParameters
+              Resource:
+                - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/previsivel/${Environment}/*
+      Events:
+        WebhookApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PrevisivelHttpApi
+            Path: /previsivel
+            Method: POST
+
+  # HTTP API Gateway
+  PrevisivelHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref LandingPageOrigin
+        AllowHeaders:
+          - content-type
+          - x-previsivel-token
+        AllowMethods:
+          - POST
+          - OPTIONS
+        MaxAge: 300
+      FailOnWarnings: true
+      Tags:
+        Environment: !Ref Environment
+        Project: Previsivel
+
+  # CloudWatch Log Group
+  PrevisivelFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/previsivel-webhook-${Environment}
+      RetentionInDays: 30
+
+Outputs:
+  ApiEndpoint:
+    Description: URL do endpoint HTTP API
+    Value: !Sub https://${PrevisivelHttpApi}.execute-api.${AWS::Region}.amazonaws.com/previsivel
+    Export:
+      Name: !Sub ${AWS::StackName}-ApiEndpoint
+
+  FunctionArn:
+    Description: ARN da função Lambda
+    Value: !GetAtt PrevisivelFunction.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-FunctionArn
+
+  TableName:
+    Description: Nome da tabela DynamoDB
+    Value: !Ref PrevisivelEventosTable
+    Export:
+      Name: !Sub ${AWS::StackName}-TableName
