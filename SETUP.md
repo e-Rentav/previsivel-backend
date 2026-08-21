@@ -90,7 +90,9 @@ sam deploy --config-env prod
 
 Na primeira execução de `sam deploy`, SAM irá perguntar:
 
-- **LandingPageOrigin**: Cole a URL completa da LP publicada no Lovable (ex: `https://previsivel-123abc.lovable.app`)
+- **LandingPageOrigin**: Cole a URL completa da LP publicada no Lovable (ex: `https://previsivel.e-rentav.com` ou `https://previsivel-123abc.lovable.app`)
+  - **⚠️ IMPORTANTE**: Nunca usar `*` em produção — sempre especificar a origem exata
+  - Para dev/testes locais você pode usar `*` temporariamente, mas em produção isso abre brecha de segurança (qualquer site pode chamar seu endpoint)
 - **Confirm changeset**: Digite `y` para confirmar
 
 ---

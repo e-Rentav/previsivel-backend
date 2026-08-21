@@ -8,11 +8,11 @@ const docClient = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.DDB_TABLE;
 
 /**
- * Grava evento de passo do funil
+ * Constrói item de evento de passo (função pura para testes)
  */
-export async function saveStepEvent(body) {
+export function buildStepEventItem(body) {
   const date = new Date(body.timestamp).toISOString().split('T')[0];
-  const item = {
+  return {
     PK: `EVENTO#${date}`,
     SK: `${body.timestamp}#${ulid()}`,
     evento: 'step_previsivel',
@@ -21,7 +21,13 @@ export async function saveStepEvent(body) {
     timestamp: body.timestamp,
     created_at: new Date().toISOString()
   };
+}
 
+/**
+ * Grava evento de passo do funil
+ */
+export async function saveStepEvent(body) {
+  const item = buildStepEventItem(body);
   await docClient.send(new PutCommand({
     TableName: TABLE_NAME,
     Item: item
@@ -29,11 +35,11 @@ export async function saveStepEvent(body) {
 }
 
 /**
- * Grava evento de lead completo (coarsened, sem valores R$)
+ * Constrói item de evento de lead (função pura para testes, sem valores R$)
  */
-export async function saveLeadEvent(body) {
+export function buildLeadEventItem(body) {
   const date = new Date(body.timestamp).toISOString().split('T')[0];
-  const item = {
+  return {
     PK: `EVENTO#${date}`,
     SK: `${body.timestamp}#${ulid()}`,
     evento: 'lead_previsivel',
@@ -48,7 +54,13 @@ export async function saveLeadEvent(body) {
     timestamp: body.timestamp,
     created_at: new Date().toISOString()
   };
+}
 
+/**
+ * Grava evento de lead completo (coarsened, sem valores R$)
+ */
+export async function saveLeadEvent(body) {
+  const item = buildLeadEventItem(body);
   await docClient.send(new PutCommand({
     TableName: TABLE_NAME,
     Item: item
@@ -95,7 +107,7 @@ export async function updateLeadAggregate(body) {
 /**
  * Determina tipo de equity (RSU ou Stock option)
  */
-function determineEquityType(qualificacao) {
+export function determineEquityType(qualificacao) {
   if (qualificacao?.tem_rsu) return 'rsu';
   if (qualificacao?.tem_option) return 'option';
   return 'unknown';

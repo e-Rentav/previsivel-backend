@@ -49,16 +49,15 @@ export const handler = async (event) => {
       return buildResponse(400, { error: 'Invalid event structure', details: validation.errors });
     }
 
-    // Carregar secrets se ainda não carregados
-    if (!secrets) {
-      secrets = await getSecrets();
-    }
-
     // Ramificar por tipo de evento
     if (body.evento === 'step_previsivel') {
       await handleStepEvent(body);
       return buildResponse(200, { ok: true, type: 'step' });
     } else if (body.evento === 'lead_previsivel') {
+      // Carregar secrets se ainda não carregados (só para lead)
+      if (!secrets) {
+        secrets = await getSecrets();
+      }
       const result = await handleLeadEvent(body, secrets);
       return buildResponse(200, { ok: true, type: 'lead', result });
     } else {
@@ -173,8 +172,7 @@ function buildResponse(statusCode, body) {
   return {
     statusCode,
     headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(body)
   };
