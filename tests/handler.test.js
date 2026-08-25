@@ -3,11 +3,11 @@ import assert from 'node:assert';
 import { readFile } from 'node:fs/promises';
 
 describe('Handler - Falha Isolada', () => {
-  it('retorna 200 quando Brevo falha mas Notion sucede', async () => {
+  it('retorna 200 quando SES falha mas Notion sucede', async () => {
     // Mock das integrações
     const mockCreateNotionLead = mock.fn(async () => ({ id: 'notion-123' }));
-    const mockSendBrevoEmail = mock.fn(async () => {
-      throw new Error('Brevo service unavailable');
+    const mockSendSESEmail = mock.fn(async () => {
+      throw new Error('SES service unavailable');
     });
     const mockCreateAsanaTask = mock.fn(async () => ({ gid: 'asana-456' }));
     const mockSaveLeadEvent = mock.fn(async () => {});
@@ -20,13 +20,12 @@ describe('Handler - Falha Isolada', () => {
 
     const secrets = {
       notionToken: 'mock-notion-token',
-      brevoKey: 'mock-brevo-key',
       asanaToken: 'mock-asana-token'
     };
 
     const results = {
       notion: { success: false },
-      brevo: { success: false },
+      email: { success: false },
       asana: { success: false },
       dynamodb: { success: false }
     };
@@ -43,17 +42,17 @@ describe('Handler - Falha Isolada', () => {
         }
       })(),
 
-      // Brevo (deve falhar)
+      // SES (deve falhar)
       (async () => {
         if (!body.identidade?.email) {
-          results.brevo.skipped = true;
+          results.email.skipped = true;
           return;
         }
         try {
-          await mockSendBrevoEmail(body, secrets.brevoKey);
-          results.brevo.success = true;
+          await mockSendSESEmail(body);
+          results.email.success = true;
         } catch (err) {
-          results.brevo.error = err.message;
+          results.email.error = err.message;
         }
       })(),
 
@@ -87,12 +86,12 @@ describe('Handler - Falha Isolada', () => {
     // 1. Notion deve ter sucedido (crítico)
     assert.strictEqual(results.notion.success, true, 'Notion deve ter sucedido');
 
-    // 2. Brevo deve ter falhado
-    assert.strictEqual(results.brevo.success, false, 'Brevo deve ter falhado');
-    assert.ok(results.brevo.error, 'Brevo deve ter erro capturado');
-    assert.match(results.brevo.error, /unavailable/, 'Erro do Brevo deve estar registrado');
+    // 2. SES deve ter falhado
+    assert.strictEqual(results.email.success, false, 'SES deve ter falhado');
+    assert.ok(results.email.error, 'SES deve ter erro capturado');
+    assert.match(results.email.error, /unavailable/, 'Erro do SES deve estar registrado');
 
-    // 3. Asana deve ter sido chamado e sucedido (não foi afetado pela falha do Brevo)
+    // 3. Asana deve ter sido chamado e sucedido (não foi afetado pela falha do SES)
     assert.strictEqual(results.asana.success, true, 'Asana deve ter sucedido');
 
     // 4. DynamoDB deve ter sido chamado e sucedido
@@ -100,12 +99,12 @@ describe('Handler - Falha Isolada', () => {
 
     // 5. Todas as integrações foram chamadas (isolamento)
     assert.strictEqual(mockCreateNotionLead.mock.calls.length, 1, 'Notion foi chamado');
-    assert.strictEqual(mockSendBrevoEmail.mock.calls.length, 1, 'Brevo foi chamado');
+    assert.strictEqual(mockSendSESEmail.mock.calls.length, 1, 'SES foi chamado');
     assert.strictEqual(mockCreateAsanaTask.mock.calls.length, 1, 'Asana foi chamado');
     assert.strictEqual(mockSaveLeadEvent.mock.calls.length, 1, 'DynamoDB saveLeadEvent foi chamado');
     assert.strictEqual(mockUpdateLeadAggregate.mock.calls.length, 1, 'DynamoDB updateLeadAggregate foi chamado');
 
-    // 6. Erro do Brevo não propagou (foi capturado)
+    // 6. Erro do SES não propagou (foi capturado)
     // O teste chegou até aqui sem throw, o que prova que o erro foi isolado
   });
 

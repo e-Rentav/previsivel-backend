@@ -1,6 +1,6 @@
 import { validateEvent } from './utils/validator.js';
 import { createNotionLead } from './integrations/notion.js';
-import { sendBrevoEmail } from './integrations/brevo.js';
+import { sendPrevisivelEmail } from './integrations/ses.js';
 import { createAsanaTask } from './integrations/asana.js';
 import { saveStepEvent, saveLeadEvent, updateLeadAggregate } from './services/dynamodb.js';
 import { getSecrets } from './services/ssm.js';
@@ -80,7 +80,7 @@ async function handleStepEvent(body) {
 
 /**
  * Processa evento de lead completo
- * Executa Notion + Brevo + Asana + DynamoDB em paralelo com try/catch independentes
+ * Executa Notion + SES + Asana + DynamoDB em paralelo com try/catch independentes
  */
 async function handleLeadEvent(body, secrets) {
   console.log(JSON.stringify({
@@ -91,7 +91,7 @@ async function handleLeadEvent(body, secrets) {
 
   const results = {
     notion: { success: false },
-    brevo: { success: false },
+    email: { success: false },
     asana: { success: false },
     dynamodb: { success: false }
   };
@@ -110,19 +110,19 @@ async function handleLeadEvent(body, secrets) {
       }
     })(),
 
-    // Brevo (só se tiver email)
+    // SES (só se tiver email)
     (async () => {
       if (!body.identidade?.email) {
-        results.brevo.skipped = true;
+        results.email.skipped = true;
         return;
       }
       try {
-        await sendBrevoEmail(body, secrets.brevoKey);
-        results.brevo.success = true;
-        console.log(JSON.stringify({ message: 'Brevo email sent', email: body.identidade.email }));
+        await sendPrevisivelEmail(body);
+        results.email.success = true;
+        console.log(JSON.stringify({ message: 'SES email sent', email: body.identidade.email }));
       } catch (err) {
-        results.brevo.error = err.message;
-        console.error(JSON.stringify({ error: 'Brevo failed', details: err.message, email: body.identidade.email }));
+        results.email.error = err.message;
+        console.error(JSON.stringify({ error: 'SES failed', details: err.message, email: body.identidade.email }));
       }
     })(),
 

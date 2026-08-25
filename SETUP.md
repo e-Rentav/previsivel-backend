@@ -17,14 +17,6 @@ aws ssm put-parameter \
   --region us-east-2 \
   --description "Token de integração Notion para PrevisÃ­vel"
 
-# API Key do Brevo
-aws ssm put-parameter \
-  --name /previsivel/dev/brevo-key \
-  --value "COLE_AQUI_SUA_API_KEY_BREVO" \
-  --type SecureString \
-  --region us-east-2 \
-  --description "API Key Brevo para envio de emails"
-
 # Token do Asana
 aws ssm put-parameter \
   --name /previsivel/dev/asana-token \
@@ -59,16 +51,16 @@ Repetir os comandos acima trocando `/dev/` por `/prod/` e usando credenciais de 
 6. Copie o "Internal Integration Token"
 7. **IMPORTANTE:** Compartilhe a base de prospecção com esta integração (botão "Share" na página da base)
 
-### Brevo API Key
-1. Acesse https://app.brevo.com/settings/keys/api
-2. Crie uma nova chave ou use uma existente
-3. Copie a chave (começa com `xkeysib-...`)
-
 ### Asana Token
 1. Acesse https://app.asana.com/0/my-apps
 2. Clique em "Personal Access Token"
 3. Crie um novo token com descrição "Previsível Backend"
 4. Copie o token gerado
+
+### Amazon SES (Email)
+O envio de emails é feito via Amazon SES usando a role IAM da Lambda. Nenhum secret adicional é necessário.
+1. Verifique o endereço remetente no console do SES
+2. Passe o endereço como parâmetro `SES_SENDER` no deploy
 
 ---
 
