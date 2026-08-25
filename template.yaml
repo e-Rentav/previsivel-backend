@@ -27,7 +27,7 @@ Parameters:
     Description: Origem da landing page para CORS (ex https://seu-dominio.lovable.app)
     Default: '*'
 
-  SES_SENDER:
+  SesSender:
     Type: String
     Description: Endereço remetente verificado no SES (ex "e-Rentav <no-reply@e-rentav.com>")
 
@@ -79,7 +79,7 @@ Resources:
           ASANA_SECTION: '1215842363706019'
           ASANA_ASSIGNEE: '1202389717777239'
           SSM_PREFIX: !Sub /previsivel/${Environment}
-          SES_SENDER: !Ref SES_SENDER
+          SES_SENDER: !Ref SesSender
           SES_REGION: us-east-2
       Policies:
         - DynamoDBCrudPolicy:
