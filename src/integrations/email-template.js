@@ -18,8 +18,8 @@ const esc = (s) =>
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-// Link do CTA — CONFIRMAR/AJUSTAR com o Guilherme (WhatsApp ou página de contato).
-const CTA_URL = "https://wa.me/message/SHENGYFQK6XWP1";
+// Link do CTA — WhatsApp e-Rentav
+const CTA_URL = "https://wa.me/5584991260224";
 
 export const EMAIL_SUBJECT = "Seu calendário de caixa fiscal — Previsível";
 
