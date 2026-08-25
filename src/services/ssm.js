@@ -13,7 +13,6 @@ export async function getSecrets() {
     const command = new GetParametersCommand({
       Names: [
         `${prefix}/notion-token`,
-        `${prefix}/brevo-key`,
         `${prefix}/asana-token`,
         `${prefix}/shared-secret`
       ],

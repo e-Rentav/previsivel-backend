@@ -27,6 +27,10 @@ Parameters:
     Description: Origem da landing page para CORS (ex https://seu-dominio.lovable.app)
     Default: '*'
 
+  SES_SENDER:
+    Type: String
+    Description: Endereço remetente verificado no SES (ex "e-Rentav <no-reply@e-rentav.com>")
+
 Resources:
   # DynamoDB Table
   PrevisivelEventosTable:
@@ -70,12 +74,13 @@ Resources:
           DDB_TABLE: !Ref PrevisivelEventosTable
           NOTION_DATA_SOURCE_ID: 289b22b9-377f-4acf-838a-0590ca81c953
           NOTION_DATABASE_ID: 18931f39854848959ecf471512eadd9f
-          BREVO_TEMPLATE_ID: '136'
           ASANA_WORKSPACE: '1202389718422606'
           ASANA_PROJECT: '1215842346830623'
           ASANA_SECTION: '1215842363706019'
           ASANA_ASSIGNEE: '1202389717777239'
           SSM_PREFIX: !Sub /previsivel/${Environment}
+          SES_SENDER: !Ref SES_SENDER
+          SES_REGION: us-east-2
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PrevisivelEventosTable
@@ -86,6 +91,11 @@ Resources:
                 - ssm:GetParameters
               Resource:
                 - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/previsivel/${Environment}/*
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: '*'  # SES requer wildcard ou ARN de identidade verificada específica
       Events:
         WebhookApi:
           Type: HttpApi
